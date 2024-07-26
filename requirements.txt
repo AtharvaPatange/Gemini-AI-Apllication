@@ -1,1 +1,1 @@
-google-generative-ai ~=3.11 
+google-generative-ai ~= 3.11 
