@@ -11,6 +11,18 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+import google.generativeai as genai
+import PIL.Image
+import os
+
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+
+img = PIL.Image.open("C:\\Users\HP\\pngwing.com.png")
+
+model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+response = model.generate_content(["What is in this photo?", img])
+print(response.text)
+
 def get_gemini_response(input_prompt, image):
     if input_prompt:
         response = model.generate_content([input_prompt, image])
