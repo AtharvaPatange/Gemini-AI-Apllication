@@ -14,6 +14,7 @@ load_dotenv()
 
 
 genai.configure(api_key="AIzaSyAb_szzFcil2GC2UJHq_ooE6bb-Z9fkA3o")
+google_api_key="AIzaSyAb_szzFcil2GC2UJHq_ooE6bb-Z9fkA3o"
 
 
 
