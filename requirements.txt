@@ -1,5 +1,8 @@
 streamlit
 google-generativeai
 python-dotenv
-Flask
+langchain
+PyPDF2
+chromadb
 faiss-cpu
+langchain_google_genai
