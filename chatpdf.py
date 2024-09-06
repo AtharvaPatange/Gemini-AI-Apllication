@@ -334,8 +334,106 @@
 
 #######################################\
 
+# import os
+# import json
+# import requests
+# from io import BytesIO
+# from flask import Flask, request, jsonify
+# from PyPDF2 import PdfReader
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
+# from langchain_google_genai import GoogleGenerativeAIEmbeddings
+# from langchain.vectorstores import FAISS
+# from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain.chains.question_answering import load_qa_chain
+# from langchain.prompts import PromptTemplate
+# from dotenv import load_dotenv
+
+# # Load environment variables
+# load_dotenv()
+
+# app = Flask(__name__)
+
+# # Function to get text from a single PDF URL
+# def get_pdf_text_from_url(pdf_url):
+#     try:
+#         response = requests.get(pdf_url)
+#         response.raise_for_status()
+#         pdf_file = BytesIO(response.content)
+#         pdf_reader = PdfReader(pdf_file)
+#         text = ""
+#         for page in pdf_reader.pages:
+#             text += page.extract_text()
+#         return text
+#     except Exception as e:
+#         print(f"Error reading PDF from URL {pdf_url}: {str(e)}")
+#         return None
+
+# def get_text_chunks(text):
+#     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+#     chunks = text_splitter.split_text(text)
+#     return chunks
+
+# def create_vector_store(text_chunks):
+#     try:
+#         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+#         vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+#         vector_store.save_local("faiss_index")
+#     except Exception as e:
+#         raise Exception(f"Error creating embeddings: {str(e)}")
+
+# def get_conversational_chain():
+#     prompt_template = """
+   
+#     \n\n
+#     Context:\n{context}\n
+#     Question:\n{question}\n
+#     Answer:
+#     """
+#     model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+#     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+#     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+#     return chain
+
+# @app.route('/process', methods=['POST'])
+# def process_request():
+#     try:
+#         # Parse JSON input
+#         input_data = request.get_json()
+#         prompt = input_data.get("prompt")
+#         pdf_url = input_data.get("url")
+
+#         if not prompt or not pdf_url:
+#             return jsonify({"error": "Prompt or URL is missing in the input."}), 400
+
+#         # Extract text from PDF
+#         raw_text = get_pdf_text_from_url(pdf_url)
+#         if not raw_text:
+#             return jsonify({"error": "Failed to extract text from PDF."}), 500
+
+#         # Process text
+#         text_chunks = get_text_chunks(raw_text)
+#         create_vector_store(text_chunks)
+
+#         # Load vector store and search for relevant documents
+#         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+#         vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+#         docs = vector_store.similarity_search(prompt)
+
+#         # Generate response using conversational chain
+#         chain = get_conversational_chain()
+#         response = chain({"input_documents": docs, "question": prompt}, return_only_outputs=True)
+
+#         return jsonify({"response": response["output_text"]}), 200
+
+#     except Exception as e:
+#         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0', port=5000)
+
+
+#############################
 import os
-import json
 import requests
 from io import BytesIO
 from flask import Flask, request, jsonify
@@ -353,6 +451,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Global variables to store vector store and embeddings
+vector_store = None
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
 # Function to get text from a single PDF URL
 def get_pdf_text_from_url(pdf_url):
     try:
@@ -368,22 +470,34 @@ def get_pdf_text_from_url(pdf_url):
         print(f"Error reading PDF from URL {pdf_url}: {str(e)}")
         return None
 
+# Function to split text into chunks
 def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
     return chunks
 
+# Function to create and save vector store once
 def create_vector_store(text_chunks):
+    global vector_store
     try:
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
         vector_store.save_local("faiss_index")
     except Exception as e:
-        raise Exception(f"Error creating embeddings: {str(e)}")
+        raise Exception(f"Error creating vector store: {str(e)}")
 
+# Function to load vector store if it exists
+def load_vector_store():
+    global vector_store
+    if vector_store is None:
+        try:
+            vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+        except Exception as e:
+            raise Exception(f"Error loading vector store: {str(e)}")
+
+# Function to get conversational chain
 def get_conversational_chain():
     prompt_template = """
-   
+    You are provided with data from the Department of Justice in India. Try to answer the input question, including any relevant information.
     \n\n
     Context:\n{context}\n
     Question:\n{question}\n
@@ -394,29 +508,21 @@ def get_conversational_chain():
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
+# Route to handle requests
 @app.route('/process', methods=['POST'])
 def process_request():
     try:
+        # Load vector store if not already loaded
+        load_vector_store()
+
         # Parse JSON input
         input_data = request.get_json()
         prompt = input_data.get("prompt")
-        pdf_url = input_data.get("url")
 
-        if not prompt or not pdf_url:
-            return jsonify({"error": "Prompt or URL is missing in the input."}), 400
+        if not prompt:
+            return jsonify({"error": "Prompt is missing in the input."}), 400
 
-        # Extract text from PDF
-        raw_text = get_pdf_text_from_url(pdf_url)
-        if not raw_text:
-            return jsonify({"error": "Failed to extract text from PDF."}), 500
-
-        # Process text
-        text_chunks = get_text_chunks(raw_text)
-        create_vector_store(text_chunks)
-
-        # Load vector store and search for relevant documents
-        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        vector_store = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+        # Perform similarity search using the vector store
         docs = vector_store.similarity_search(prompt)
 
         # Generate response using conversational chain
@@ -428,12 +534,42 @@ def process_request():
     except Exception as e:
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
+# Function to initialize the vector store at application startup
+def initialize_vector_store():
+    # Define your list of PDF URLs here
+    PDF_URLS = [
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/ALAHABAD%20High%20Court.pdf?alt=media&token=167623fa-bd50-451a-999c-937403109289",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/ANDHRA.pdf?alt=media&token=cae63b52-1a58-403d-a082-ed31cf0f5f05",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/BOMBAY.pdf?alt=media&token=67970fe5-10ff-46e2-954d-6a07b9d30da0",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/FAST%20Track%20Special%20Court.pdf?alt=media&token=df061683-e8fc-474e-a1da-e9ccfb2ca326",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/High%20Court%20Vacancy.pdf?alt=media&token=5e24ffbd-ccfe-4160-b875-a4893974422e",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/Higher%20Higher%20Judges.pdf?alt=media&token=d34cf137-0bb9-4b2a-bf3e-9c9dfcce3db9",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/JUDGES.pdf?alt=media&token=bd26d405-c58d-41e0-b6b6-2155d542dc32",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/Supreme%20Court%20Vacancy.pdf?alt=media&token=60926839-6614-43ed-9a6d-c5483d7d884d",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/Tele%20Law.pdf?alt=media&token=d71883a9-5b77-4fae-8723-55ba29c97e1e",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/Vacancy.pdf?alt=media&token=49f7d48b-c258-44d4-b6fd-f5ba447576f7",
+        "https://firebasestorage.googleapis.com/v0/b/dojweb-de6e2.appspot.com/o/alldataofdojinpdf.pdf?alt=media&token=272e4f0f-35ce-4bac-afff-e9c86f7f43dd"
+
+    ]
+
+    # Extract text from all PDFs and process it once
+    raw_text = ""
+    for url in PDF_URLS:
+        pdf_text = get_pdf_text_from_url(url)
+        if pdf_text:
+            raw_text += pdf_text + "\n"
+    
+    if raw_text:
+        # Process text into chunks
+        text_chunks = get_text_chunks(raw_text)
+
+        # Create and save the vector store
+        create_vector_store(text_chunks)
+
 if __name__ == "__main__":
+    # Initialize vector store before the app runs
+    initialize_vector_store()
     app.run(host='0.0.0.0', port=5000)
-
-
-
-
 
 # import streamlit as st
 # import time
