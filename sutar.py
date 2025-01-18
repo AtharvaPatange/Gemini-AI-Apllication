@@ -1,157 +1,92 @@
 import streamlit as st
-import requests
-import PyPDF2
-from PIL import Image
-import docx
-import io
+from PyPDF2 import PdfReader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import google.generativeai as genai
+from langchain.vectorstores import FAISS
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
+from dotenv import load_dotenv
 
-# Function to simulate file upload by reading files from the disk
-def programmatically_upload_files(file_paths):
-    uploaded_files = []
-    for file_path in file_paths:
-        with open(file_path, "rb") as f:
-            pdf_bytes = f.read()
-            file_obj = io.BytesIO(pdf_bytes)
-            file_obj.name = file_path  # Set the name attribute manually
-            uploaded_files.append(file_obj)
-    st.session_state.input_data['files'] = uploaded_files
+load_dotenv()
 
-# Function to extract text from PDFs
-def extract_text_from_pdfs(pdf_files):
-    combined_text = ""
-    for pdf_file in pdf_files:
+genai.configure(api_key="YOUR_API_KEY_HERE")  # Replace with your API key from environment
+google_api_key = "YOUR_API_KEY_HERE"  # Replace with your API key from environment
+
+def get_pdf_text(pdf_docs):
+    text = ""
+    for pdf in pdf_docs:
         try:
-            reader = PyPDF2.PdfReader(pdf_file)
-            text = ""
-            for page_num in range(len(reader.pages)):
-                page = reader.pages[page_num]
+            pdf_reader = PdfReader(pdf)
+            for page in pdf_reader.pages:
                 text += page.extract_text()
-            combined_text += text + "\n"
         except Exception as e:
-            st.error(f"Failed to read PDF file: {e}")
-            return None
-    return combined_text
+            st.error(f"Error reading PDF: {str(e)}")
+    return text
 
-# Function to extract text from DOCX files
-def extract_text_from_docx(docx_files):
-    combined_text = ""
-    for docx_file in docx_files:
-        try:
-            doc = docx.Document(docx_file)
-            text = "\n".join([para.text for para in doc.paragraphs])
-            combined_text += text + "\n"
-        except Exception as e:
-            st.error(f"Failed to read DOCX file: {e}")
-            return None
-    return combined_text
+def get_text_chunks(text):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    chunks = text_splitter.split_text(text)
+    return chunks
 
-# Function to process image files (e.g., PNG, JPG)
-def process_images(image_files):
-    image_texts = []
-    for image_file in image_files:
-        try:
-            img = Image.open(image_file)
-            st.image(img, caption=image_file.name)
-            image_texts.append(f"Image file: {image_file.name}")
-        except Exception as e:
-            st.error(f"Failed to process image: {e}")
-    return "\n".join(image_texts)
+def get_vector_store(text_chunks):
+    try:
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+        vector_store.save_local("faiss_index")
+    except Exception as e:
+        st.error(f"Error creating embeddings: {str(e)}")
+        raise
 
-def call_api(data):
-    api_url = "https://llama-1.onrender.com/history"
-    
-    # Construct the JSON payload
-    payload = {
-        "username": "siddharamsutar23@gmail.com",  # Ensure this is correct
-        "prompt": data["content"]
-    }
-    
-    # Define the headers
-    headers = {
-        "Content-Type": "application/json",  # Specify the content type
-        "Accept": "application/json"           # Specify the expected response type
-    }
-    
-    # Make the API request with headers
-    response = requests.post(api_url, json=payload, headers=headers)
-    
-    # Check the response status
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.error(f"API request failed with status code {response.status_code}. Response: {response.text}")
-        return None
-    
-# Function to display API response
-def display_response(response):
-    st.subheader("API Response")
-    if isinstance(response, dict):
-        for key, value in response.items():
-            st.write(f"{key.capitalize()}: *{value}*")
-    else:
-        st.write(response)
+def get_conversational_chain():
+    prompt_template = """
+    Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
+    provided context just say, "answer is not available in the context", if something related  to input keyword is found tell all about it \n\n
+    Context:\n {context}?\n
+    Question: \n{question}\n
 
-# Main page
+    Answer:
+    """
+
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
+    prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+    chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
+
+    return chain
+
+def user_input(user_question):
+    try:
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+        docs = new_db.similarity_search(user_question)
+
+        chain = get_conversational_chain()
+        response = chain(
+            {"input_documents": docs, "question": user_question},
+            return_only_outputs=True
+        )
+
+        st.write("Reply: ", response["output_text"])
+    except Exception as e:
+        st.error(f"Error during user input processing: {str(e)}")
+
+
+# Page 1: Main page
 def main_page():
-    st.title("Main Page")
+    st.header("Main Page: Chat with PDF using Gemini💁")
+    
+    user_question = st.text_input("Ask a Question from the PDF Files")
+    
+    if user_question:
+        user_input(user_question)  # Assuming user_input is already defined elsewhere
 
-    # Initialize session state
-    if 'input_data' not in st.session_state:
-        st.session_state.input_data = {'files': []}
-
-    # Parse the JSON input
-    input_json =st.query_params
-    prompt = input_json.get("prompt", [""])[0]
-    session_id = input_json.get("session_id", [""])[0]
-
-    if prompt and session_id:
-        # Programmatically upload files
-        programmatically_upload_files([
-            "C:/Users/HP/Downloads/Tele Law.pdf",
-            "C:/Users/HP/Downloads/Vacancy.pdf"
-        ])
-
-        # Process the uploaded files
-        if st.session_state.input_data['files']:
-            files = st.session_state.input_data['files']
-            combined_text = ""
-
-            # Process PDF files
-            pdf_files = [f for f in files if f.name.endswith('.pdf')]
-            if pdf_files:
-                pdf_text = extract_text_from_pdfs(pdf_files)
-                if pdf_text:
-                    combined_text += pdf_text
-
-            # Process DOCX files
-            docx_files = [f for f in files if f.name.endswith('.docx')]
-            if docx_files:
-                docx_text = extract_text_from_docx(docx_files)
-                if docx_text:
-                    combined_text += docx_text
-
-            # Process Image files
-            image_files = [f for f in files if f.name.lower().endswith(('.png', '.jpg', '.jpeg'))]
-            if image_files:
-                image_text = process_images(image_files)
-                combined_text += image_text
-
-            if combined_text:
-                full_prompt = f"{prompt}\n\n{combined_text}"
-                data = {"content": full_prompt}
-
-                # Call the API with the combined content
-                api_response = call_api(data)
-
-                if api_response:
-                    st.json(api_response)
-            else:
-                st.error("No valid content to process.")
-        else:
-            st.error("No files found to process.")
-    else:
-        st.error("Invalid JSON input. Please provide 'prompt' and 'session_id'.")
-
-# Run the app
-if __name__ == "__main__":
-    main_page()
+    with st.sidebar:
+        st.title("Menu:")
+        pdf_docs = st.file_uploader("Upload your PDF Files and Click on the Submit & Process Button", accept_multiple_files=True)
+        if st.button("Submit & Process"):
+            with st.spinner("Processing..."):
+                raw_text = get_pdf_text(pdf_docs)  # Assuming get_pdf_text is already defined elsewhere
+                text_chunks = get_text_chunks(raw_text)  # Assuming get_text_chunks is already defined elsewhere
+                get_vector_store(text_chunks)  # Assuming get_vector_store is already defined elsewhere
+                st.success("Done")
