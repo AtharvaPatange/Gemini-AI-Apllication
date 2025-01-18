@@ -4,3 +4,8 @@ pillow
 pdf2image
 google-generativeai
 PyPDF2
+Flask
+ephem
+datetime
+flask_cors
+groq
