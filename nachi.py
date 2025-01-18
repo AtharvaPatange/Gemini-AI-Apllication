@@ -3,7 +3,6 @@ import ephem
 from datetime import datetime
 
 
-from flask import app 
 # Flask app initialization
 app = Flask(__name__)
 
