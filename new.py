@@ -83,18 +83,18 @@ def soulbuddy():
 
         response = requests.post('https://gemini-ai-apllication.onrender.com/soulbuddy1', json=user_data)
 
-        if response.status_code == 200:
+        # if response.status_code == 200:
         # Retrieve the response as text
-          kundali = response.text
-          spiritual_advice = get_spiritual_advice(
+        kundali = response.text
+        spiritual_advice = get_spiritual_advice(
                 user_data["name"], 
                 user_data["dob"], 
                 kundali
             )
 
-          return jsonify({"spiritual_advice": spiritual_advice})
-        else:
-          return jsonify({"error": f"Failed to fetch data. Status Code: {response.status_code}"}), 400
+        return jsonify({"spiritual_advice": spiritual_advice})
+        # else:
+        #   return jsonify({"error": f"Failed to fetch data. Status Code: {response.status_code}"}), 400
        
        
     
