@@ -24,6 +24,7 @@ def generate_llama_response(predefined_prompt, api_key):
     response = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model="llama3-8b-8192", 
+        temperature=0.3,
     )
     
     llama_response_content = response.choices[0].message.content
