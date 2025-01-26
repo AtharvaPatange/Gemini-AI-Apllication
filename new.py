@@ -14,22 +14,22 @@ from groq import Groq
 api_key_llama = "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"  
 
 
-def generate_llama_response(predefined_prompt, api_key):
-    prompt = predefined_prompt
+# def generate_llama_response(predefined_prompt, api_key):
+#     prompt = predefined_prompt
 
    
-    client = Groq(api_key=api_key)
+#     client = Groq(api_key=api_key)
 
  
-    response = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama3-8b-8192", 
-        temperature=0.3,
-    )
+#     response = client.chat.completions.create(
+#         messages=[{"role": "user", "content": prompt}],
+#         model="llama3-8b-8192", 
+#         temperature=0.3,
+#     )
     
-    llama_response_content = response.choices[0].message.content
+#     llama_response_content = response.choices[0].message.content
  
-    return llama_response_content
+#     return llama_response_content
 
 
     
@@ -57,6 +57,7 @@ def get_spiritual_advice(name, dob, kundali):
     response = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
         model="llama3-8b-8192", 
+        temperature=0.4
     )
     
     llama_response_content = response.choices[0].message.content
