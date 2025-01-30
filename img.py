@@ -148,9 +148,10 @@ from flask import Flask, request, jsonify, send_file
 from transformers import AutoModelForImageClassification, AutoImageProcessor, pipeline
 from PIL import Image
 import matplotlib.pyplot as plt
+from flask_cors import CORS
 
 app = Flask(__name__)
-
+CORS(app)
 # Load the deepfake detection model
 model_name = "Wvolf/ViT_Deepfake_Detection"
 model = AutoModelForImageClassification.from_pretrained(model_name)
@@ -180,8 +181,6 @@ def detect_deepfake():
         output = [
             {"label": result["label"], "score": round(result["score"], 3)} for result in results
         ]
-
-        
 
         
         return jsonify({

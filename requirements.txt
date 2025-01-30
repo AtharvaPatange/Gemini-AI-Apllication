@@ -15,3 +15,4 @@ transformers
 requests 
 torch 
 torchvision
+matplotlib
