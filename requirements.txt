@@ -10,3 +10,8 @@ datetime
 flask_cors
 groq
 gunicorn
+flask 
+transformers
+requests 
+torch 
+torchvision
