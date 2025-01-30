@@ -749,163 +749,163 @@ elif page == "Page Three":
 #         "files": None
 #     }
 
-# # Function to simulate file upload by reading files from the disk
-# def programmatically_upload_files(file_paths):
-#     uploaded_files = []
-#     for file_path in file_paths:
-#         with open(file_path, "rb") as f:
-#             pdf_bytes = f.read()
-#             file_obj = io.BytesIO(pdf_bytes)
-#             file_obj.name = file_path  # Set the name attribute manually
-#             uploaded_files.append(file_obj)
-#     st.session_state.input_data['files'] = uploaded_files
+# Function to simulate file upload by reading files from the disk
+def programmatically_upload_files(file_paths):
+    uploaded_files = []
+    for file_path in file_paths:
+        with open(file_path, "rb") as f:
+            pdf_bytes = f.read()
+            file_obj = io.BytesIO(pdf_bytes)
+            file_obj.name = file_path  # Set the name attribute manually
+            uploaded_files.append(file_obj)
+    st.session_state.input_data['files'] = uploaded_files
 
-# # Function to extract text from PDFs
-# def extract_text_from_pdfs(pdf_files):
-#     combined_text = ""
-#     for pdf_file in pdf_files:
-#         try:
-#             reader = PyPDF2.PdfReader(pdf_file)
-#             text = ""
-#             for page_num in range(len(reader.pages)):
-#                 page = reader.pages[page_num]
-#                 text += page.extract_text()
-#             combined_text += text + "\n"
-#         except Exception as e:
-#             st.error(f"Failed to read PDF file: {e}")
-#             return None
-#     return combined_text
+# Function to extract text from PDFs
+def extract_text_from_pdfs(pdf_files):
+    combined_text = ""
+    for pdf_file in pdf_files:
+        try:
+            reader = PyPDF2.PdfReader(pdf_file)
+            text = ""
+            for page_num in range(len(reader.pages)):
+                page = reader.pages[page_num]
+                text += page.extract_text()
+            combined_text += text + "\n"
+        except Exception as e:
+            st.error(f"Failed to read PDF file: {e}")
+            return None
+    return combined_text
 
-# # Function to extract text from DOCX files
-# def extract_text_from_docx(docx_files):
-#     combined_text = ""
-#     for docx_file in docx_files:
-#         try:
-#             doc = docx.Document(docx_file)
-#             text = "\n".join([para.text for para in doc.paragraphs])
-#             combined_text += text + "\n"
-#         except Exception as e:
-#             st.error(f"Failed to read DOCX file: {e}")
-#             return None
-#     return combined_text
+# Function to extract text from DOCX files
+def extract_text_from_docx(docx_files):
+    combined_text = ""
+    for docx_file in docx_files:
+        try:
+            doc = docx.Document(docx_file)
+            text = "\n".join([para.text for para in doc.paragraphs])
+            combined_text += text + "\n"
+        except Exception as e:
+            st.error(f"Failed to read DOCX file: {e}")
+            return None
+    return combined_text
 
-# # Function to process image files (e.g., PNG, JPG)
-# def process_images(image_files):
-#     image_texts = []
-#     for image_file in image_files:
-#         try:
-#             img = Image.open(image_file)
-#             st.image(img, caption=image_file.name)
-#             image_texts.append(f"Image file: {image_file.name}")
-#         except Exception as e:
-#             st.error(f"Failed to process image: {e}")
-#     return "\n".join(image_texts)
+# Function to process image files (e.g., PNG, JPG)
+def process_images(image_files):
+    image_texts = []
+    for image_file in image_files:
+        try:
+            img = Image.open(image_file)
+            st.image(img, caption=image_file.name)
+            image_texts.append(f"Image file: {image_file.name}")
+        except Exception as e:
+            st.error(f"Failed to process image: {e}")
+    return "\n".join(image_texts)
 
-# # Function to handle API requests
-# def call_api(data):
-#     api_url = "https://llama-1.onrender.com/history"
+# Function to handle API requests
+def call_api(data):
+    api_url = "https://llama-1.onrender.com/history"
 
-#     # Construct the JSON payload
-#     payload = {
-#         "username": "siddharamsutar23@gmail.com",
-#         "prompt": data["content"]
-#     }
+    # Construct the JSON payload
+    payload = {
+        "username": "siddharamsutar23@gmail.com",
+        "prompt": data["content"]
+    }
     
-#     response = requests.post(api_url, json=payload)
+    response = requests.post(api_url, json=payload)
     
-#     if response.status_code == 200:
-#         return response.json()
-#     else:
-#         st.error(f"API request failed with status code {response.status_code}.")
-#         return None
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"API request failed with status code {response.status_code}.")
+        return None
 
-# # Function to display API response
-# def display_response(response):
-#     st.subheader("API Response")
-#     if isinstance(response, dict):
-#         for key, value in response.items():
-#             st.write(f"**{key.capitalize()}:** {value}")
-#     else:
-#         st.write(response)
+# Function to display API response
+def display_response(response):
+    st.subheader("API Response")
+    if isinstance(response, dict):
+        for key, value in response.items():
+            st.write(f"**{key.capitalize()}:** {value}")
+    else:
+        st.write(response)
 
-# # Main page
-# def main_page():
-#     st.title("Main Page")
+# Main page
+def main_page():
+    st.title("Main Page")
 
-#     # Programmatically upload files
-#     programmatically_upload_files([
-#         r"C:\Users\HP\Downloads\Doj1_merged.pdf"
+    # Programmatically upload files
+    programmatically_upload_files([
+        r"C:\Users\HP\Downloads\Doj1_merged.pdf"
 
-#     ])
+    ])
 
-#     # Process the uploaded files
-#     if st.session_state.input_data['files']:
-#         files = st.session_state.input_data['files']
-#         combined_text = ""
+    # Process the uploaded files
+    if st.session_state.input_data['files']:
+        files = st.session_state.input_data['files']
+        combined_text = ""
 
-#         # Process PDF files
-#         pdf_files = [f for f in files if f.name.endswith('.pdf')]
-#         if pdf_files:
-#             pdf_text = extract_text_from_pdfs(pdf_files)
-#             if pdf_text:
-#                 combined_text += pdf_text
+        # Process PDF files
+        pdf_files = [f for f in files if f.name.endswith('.pdf')]
+        if pdf_files:
+            pdf_text = extract_text_from_pdfs(pdf_files)
+            if pdf_text:
+                combined_text += pdf_text
 
-#         # Process DOCX files
-#         docx_files = [f for f in files if f.name.endswith('.docx')]
-#         if docx_files:
-#             docx_text = extract_text_from_docx(docx_files)
-#             if docx_text:
-#                 combined_text += docx_text
+        # Process DOCX files
+        docx_files = [f for f in files if f.name.endswith('.docx')]
+        if docx_files:
+            docx_text = extract_text_from_docx(docx_files)
+            if docx_text:
+                combined_text += docx_text
 
-#         # Process Image files
-#         image_files = [f for f in files if f.name.lower().endswith(('.png', '.jpg', '.jpeg'))]
-#         if image_files:
-#             image_text = process_images(image_files)
-#             combined_text += image_text
+        # Process Image files
+        image_files = [f for f in files if f.name.lower().endswith(('.png', '.jpg', '.jpeg'))]
+        if image_files:
+            image_text = process_images(image_files)
+            combined_text += image_text
 
-#         if combined_text:
-#             prompt_text = st.text_input("Enter your question or prompt:")
+        if combined_text:
+            prompt_text = st.text_input("Enter your question or prompt:")
 
-#             if st.button("Generate Response"):
-#                 # Combine prompt with extracted text
-#                 full_prompt = f"{prompt_text}\n\n{combined_text}"
+            if st.button("Generate Response"):
+                # Combine prompt with extracted text
+                full_prompt = f"{prompt_text}\n\n{combined_text}"
                 
-#                 data = {"content": full_prompt}
+                data = {"content": full_prompt}
                 
-#                 # Call the API with the combined content
-#                 api_response = call_api(data)
+                # Call the API with the combined content
+                api_response = call_api(data)
                 
-#                 if api_response:
-#                     st.subheader("AI Response")
-#                     st.write(api_response)
+                if api_response:
+                    st.subheader("AI Response")
+                    st.write(api_response)
 
 
-#         else:
-#             st.error("No valid content to process.")
-#     else:
-#         st.error("No files found to process.")
+        else:
+            st.error("No valid content to process.")
+    else:
+        st.error("No files found to process.")
 
-# # Run the app
-# if __name__ == "__main__":
-#     main_page()
-# import streamlit as st
-# import requests
-# import PyPDF2
-# from PIL import Image
-# import docx
-# import io
-# import json
-# import google.generativeai as genai
-# import os
+# Run the app
+if __name__ == "__main__":
+    main_page()
+import streamlit as st
+import requests
+import PyPDF2
+from PIL import Image
+import docx
+import io
+import json
+import google.generativeai as genai
+import os
 
-# # Initialize session state
-# if 'input_data' not in st.session_state:
-#     st.session_state.input_data = {
-#         "text": "",
-#         "pdf_url": "",
-#         "files": None,
-#         "json_prompt": ""  # Field for JSON input prompt
-#     }
+# Initialize session state
+if 'input_data' not in st.session_state:
+    st.session_state.input_data = {
+        "text": "",
+        "pdf_url": "",
+        "files": None,
+        "json_prompt": ""  # Field for JSON input prompt
+    }
 
 # # Function to simulate file upload by reading files from the disk
 # def programmatically_upload_files(file_paths):
