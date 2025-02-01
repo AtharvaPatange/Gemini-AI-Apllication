@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Deepfake Detection System</h1>
+        
+        <div class="upload-box">
+            <form id="uploadForm">
+                <div class="file-input">
+                    <input type="file" id="video" name="video" accept="video/*">
+                    <label for="video">Choose Video</label>
+                </div>
+                <p class="file-info">Supported formats: MP4, AVI, MOV, WMV (Max 16MB)</p>
+            </form>
+
+            <div class="preview-section">
+                <video id="videoPreview" controls style="display: none;"></video>
+            </div>
+
+            <button id="detectBtn" class="detect-btn" disabled>Analyze Video</button>
+        </div>
+
+        <div id="loading" class="loading-section" style="display: none;">
+            <div class="loader"></div>
+            <p>Analyzing video... Please wait</p>
+        </div>
+
+        <div id="results" class="results-section" style="display: none;">
+            <h2>Detection Results</h2>
+            <div class="results-container">
+                <div class="model-results" id="timesformerResults">
+                    <h3>Timesformer Model</h3>
+                    <div class="probability-bars"></div>
+                </div>
+                <div class="model-results" id="vitResults">
+                    <h3>ViT Model</h3>
+                    <div class="probability-bars"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoInput = document.getElementById('video');
+        const videoPreview = document.getElementById('videoPreview');
+        const detectBtn = document.getElementById('detectBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+
+        videoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 16 * 1024 * 1024) {
+                    alert('File size must be less than 16MB');
+                    this.value = '';
+                    return;
+                }
+                const videoUrl = URL.createObjectURL(file);
+                videoPreview.src = videoUrl;
+                videoPreview.style.display = 'block';
+                detectBtn.disabled = false;
+            }
+        });
+
+        detectBtn.addEventListener('click', async function() {
+            const formData = new FormData();
+            formData.append('video', videoInput.files[0]);
+
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            detectBtn.disabled = true;
+
+            try {
+                const response = await fetch('/detect-deepfake', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    displayResults(data.results);
+                    results.style.display = 'block';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (error) {
+                alert('Error processing video: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                detectBtn.disabled = false;
+            }
+        });
+
+        function displayResults(results) {
+            const timesformerDiv = document.getElementById('timesformerResults');
+            const vitDiv = document.getElementById('vitResults');
+
+            // Display Timesformer results
+            timesformerDiv.querySelector('.probability-bars').innerHTML = `
+                <div class="prob-bar">
+                    <span>Real: ${(results.timesformer_results.real_probability * 100).toFixed(2)}%</span>
+                    <div class="bar">
+                        <div class="fill" style="width: ${results.timesformer_results.real_probability * 100}%"></div>
+                    </div>
+                </div>
+                <div class="prob-bar">
+                    <span>Fake: ${(results.timesformer_results.fake_probability * 100).toFixed(2)}%</span>
+                    <div class="bar">
+                        <div class="fill" style="width: ${results.timesformer_results.fake_probability * 100}%"></div>
+                    </div>
+                </div>
+            `;
+
+            // Display ViT results
+            vitDiv.querySelector('.probability-bars').innerHTML = `
+                <div class="prob-bar">
+                    <span>Real: ${(results.vit_results.real_probability * 100).toFixed(2)}%</span>
+                    <div class="bar">
+                        <div class="fill" style="width: ${results.vit_results.real_probability * 100}%"></div>
+                    </div>
+                </div>
+                <div class="prob-bar">
+                    <span>Fake: ${(results.vit_results.fake_probability * 100).toFixed(2)}%</span>
+                    <div class="bar">
+                        <div class="fill" style="width: ${results.vit_results.fake_probability * 100}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
