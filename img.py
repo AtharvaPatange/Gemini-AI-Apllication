@@ -141,55 +141,104 @@
 # plt.show()
 
 
-import os
-import requests
-from io import BytesIO
-from flask import Flask, request, jsonify, send_file
-from transformers import AutoModelForImageClassification, AutoImageProcessor, pipeline
-from PIL import Image
-import matplotlib.pyplot as plt
-from flask_cors import CORS
+# import os
+# import requests
+# from io import BytesIO
+# from flask import Flask, request, jsonify, send_file
+# from transformers import AutoModelForImageClassification, AutoImageProcessor, pipeline
+# from PIL import Image
+# import matplotlib.pyplot as plt
+# from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
-# Load the deepfake detection model
-model_name = "Wvolf/ViT_Deepfake_Detection"
-model = AutoModelForImageClassification.from_pretrained(model_name)
-processor = AutoImageProcessor.from_pretrained(model_name)
-deepfake_detector = pipeline("image-classification", model=model, feature_extractor=processor)
+# app = Flask(__name__)
+# CORS(app)
+# # Load the deepfake detection model
+# model_name = "Wvolf/ViT_Deepfake_Detection"
+# model = AutoModelForImageClassification.from_pretrained(model_name)
+# processor = AutoImageProcessor.from_pretrained(model_name)
+# deepfake_detector = pipeline("image-classification", model=model, feature_extractor=processor)
 
-# Folder to save pie chart images
-if not os.path.exists("static"):
-    os.makedirs("static")
+# # Folder to save pie chart images
+# if not os.path.exists("static"):
+#     os.makedirs("static")
 
-@app.route("/detect", methods=["POST"])
-def detect_deepfake():
-    data = request.get_json()  # Accept JSON data
-    image_url = data.get("image_url")
+# @app.route("/detect", methods=["POST"])
+# def detect_deepfake():
+#     data = request.get_json()  # Accept JSON data
+#     image_url = data.get("image_url")
     
-    if not image_url:
-        return jsonify({"error": "No image URL provided"}), 400
+#     if not image_url:
+#         return jsonify({"error": "No image URL provided"}), 400
 
-    try:
-        # Download the image from the URL
-        response = requests.get(image_url)
-        image = Image.open(BytesIO(response.content))
+#     try:
+#         # Download the image from the URL
+#         response = requests.get(image_url)
+#         image = Image.open(BytesIO(response.content))
 
-        # Run deepfake detection
-        results = deepfake_detector(image)
+#         # Run deepfake detection
+#         results = deepfake_detector(image)
         
-        output = [
-            {"label": result["label"], "score": round(result["score"], 3)} for result in results
-        ]
+#         output = [
+#             {"label": result["label"], "score": round(result["score"], 3)} for result in results
+#         ]
 
         
-        return jsonify({
-            "result": output,
+#         return jsonify({
+#             "result": output,
            
-        })
+#         })
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
+
+
+# Use a pipeline as a high-level helper
+# from transformers import pipeline
+
+# messages = [
+#     {"role": "user", "content": "Who are you?"},
+# ]
+# pipe = pipeline("text-generation", model="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
+# pipe(messages)
+# print(pipe[0]['generated_text'])
+
+from transformers import pipeline
+
+# Load the DeepSeek model
+pipe = pipeline("text-generation", model="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
+
+# Define the user prompt
+prompt = "i am atharva and wanted to know about you"
+
+# Generate text with truncation enabled
+output = pipe(prompt, max_length=200, do_sample=True, truncation=True)
+
+# Print result
+print(output[0]['generated_text'])
+
+# print(output[0]['generated_text'])
+
+# from transformers import AutoFeatureExtractor, AutoModelForImageClassification
+# import torch
+# from PIL import Image
+
+# # Load feature extractor and model with custom code
+# feature_extractor = AutoFeatureExtractor.from_pretrained("deepseek-ai/DeepSeek-V3", trust_remote_code=True)
+# model = AutoModelForImageClassification.from_pretrained("deepseek-ai/DeepSeek-V3", trust_remote_code=True)
+
+# # Load an image
+# image = Image.open("path/to/image.jpg").convert("RGB")
+
+# # Preprocess the image
+# inputs = feature_extractor(images=image, return_tensors="pt")
+
+# # Run the model
+# outputs = model(**inputs)
+
+# # Process the results
+# logits = outputs.logits
+# probabilities = torch.nn.functional.softmax(logits, dim=-1)
+# print(probabilities)

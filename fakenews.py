@@ -36,7 +36,7 @@ def generate_llama_response(predefined_prompt, api_key):
     return response.choices[0].message.content
 
 API_KEY_FACT_CHECK = "AIzaSyCils4GVVHtQyBcyCmrGWNAUpoR7dmOBy0"
-API_KEY_LLAMA = "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"
+API_KEY_LLAMA = "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"
 
 @app.route('/verify-news', methods=['POST'])
 def verify_news():
