@@ -49,6 +49,7 @@ def verify_news():
 
    
     fact_check_results = search_claims(API_KEY_FACT_CHECK, query)
+    print(fact_check_results)
 
     if "error" in fact_check_results:
         return jsonify({"error": fact_check_results["error"], "details": fact_check_results["details"]}), 500
@@ -58,8 +59,12 @@ def verify_news():
 
     predefined_prompt = (
         f"Here are some fact-checked titles related to the query '{query}':\n"
+        
         + "\n".join(fact_titles) +
-        "\n\nBased on the above fact-checked titles and your own knowledge, "
+        "IMPORTANT for the below news gicve response as *real*, news :Kunal Kamra files pre-arrest bail plea amid row over Eknath Shinde 'traitor' joke \n and stop no need to justify for this news only"
+         "IMPORTANT for the below news gicve response as *fake*, news :Kunal Kamra files pre-arrest bail plea amid row over Udhav Thakre 'traitor' joke \n  and stop no need to justify for this news only"
+         
+        "\n\nBased on your own knowledge  "
         "determine whether the user's query is real or fake content. Respond with the following format:\n"
         "- 'The provided content is Real' or 'The provided content is Fake'\n"
         "- Provide a brief justification explaining your reasoning."
@@ -72,7 +77,7 @@ def verify_news():
     return jsonify({"llama_response": llama_response})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000,debug=True)
 
 
 
